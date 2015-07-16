@@ -3,4 +3,4 @@ version: 2.14.8
 authors: [Empire92]
 depend: [PlotSquared, Plotz]
 main: sux.kyle.plotz.Main
-description: Short for Plotz Suxamethonium chloride - A chemical that well describes the sensation of switching from Plotz. Fun fact, did you know that Plotz forked from PlotMe?
+description: A lot of people were asking for this; it is a Plotz to PlotSquared converter.

@@ -38,8 +38,6 @@ public class PlotzConnector extends APlotMeConnector {
     @Override
     public boolean isValidConnection(Connection connection) {
         Plugin plotz = Bukkit.getPluginManager().getPlugin("Plotz");
-        System.out.print(plotz == null);
-        System.out.print(plotz.isEnabled());
         return plotz != null && plotz.isEnabled();
     }
 
@@ -56,7 +54,8 @@ public class PlotzConnector extends APlotMeConnector {
                 int y = plotzPlot.getIdZ();
                 PlotId id = new PlotId(x, y);
                 UUID owner = plotzPlot.getOwner();
-                Plot plot = new Plot(worldname, id, owner);
+                PlotId actualid = new PlotId(x + 1, y + 1);
+                Plot plot = new Plot(worldname, actualid, owner);
                 for (UUID denied : plotzPlot.getDenied()) {
                     plot.denied.add(denied);
                 }
@@ -93,7 +92,7 @@ public class PlotzConnector extends APlotMeConnector {
                         plot.settings.setMerged(2, true);
                     }
                 }
-                plots.put(id, plot);
+                plots.put(actualid, plot);
             }
         }
         return allPlots;
@@ -119,9 +118,16 @@ public class PlotzConnector extends APlotMeConnector {
         PS.get().config.set("worlds." + actualWorldName + ".plot.filling", Arrays.asList(filling));
         PS.get().config.set("worlds." + actualWorldName + ".road.block", "1:0"); 
         PS.log("&3 - Calculating offset");
-        // schematic conversion
+        
         int xo = Integer.parseInt(plotConfig.getString("worlds." + world + ".plot-x-offset")) + 1;
         int zo = Integer.parseInt(plotConfig.getString("worlds." + world + ".plot-z-offset")) + 1;
+        
+        
+        int lower = ((int) (road / 2)) - (road %2 == 0 ? 1 : 0) + 1;
+        if (xo != lower) {
+            PS.get().config.set("worlds." + actualWorldName + ".road.offset.x", xo - lower);
+            PS.get().config.set("worlds." + actualWorldName + ".road.offset.z", zo - lower);
+        }
         
         PS.log("&3 - Fetching schematic");
         File file = new File("plugins/" + plugin + "/schematics/" + world + ".schematic");
@@ -176,8 +182,6 @@ public class PlotzConnector extends APlotMeConnector {
         PS.get().config.set("worlds." + actualWorldName + ".plot.height", min);
         PS.get().config.set("worlds." + actualWorldName + ".wall.height", min);
         
-        System.out.print(min + " | " + max + " | " + total + " | " + road + " | " + width);
-        
         byte[] iblock = new byte[road * road * (1 + max - min)];
         byte[] idata = new byte[road * road * (1 + max - min)];
         Dimension idim = new Dimension(road, 1 + max - min, road);
@@ -189,15 +193,11 @@ public class PlotzConnector extends APlotMeConnector {
         byte[] pblock = new byte[width * width * (1 + max - min)];
         byte[] pdata = new byte[width * width * (1 + max - min)];
         Dimension pdim = new Dimension(width, 1 + max - min, width);
-        
-        System.out.print(road + "," + width + "," + (1 + max - min));
-        
         for (int x = 0; x < dimensions.getX(); x++) {
+            boolean rx = (x < rtx && x >= rbx) || (x < rtx2 && x >= rbx2);
             for (int z = 0; z < dimensions.getZ(); z++) {
-                boolean rx = (x < rtx && x >= rbx) || (x < rtx2 && x >= rbx2);
                 boolean rz = (z < rtz && z >= rbz) || (z < rtz2 && z >= rbz2);
                 if (rx && rz) {
-                    // intersection
                     int xx = (x - rbx) % total;
                     int zz = (z - rbz) % total;
                     if (xx < 0) xx += total;
@@ -213,7 +213,6 @@ public class PlotzConnector extends APlotMeConnector {
                     }
                 }
                 else if (rx) {
-                    // sideroad
                     int xx = (x - rbx) % total;
                     int zz = (z - rtz) % total;
                     if (xx < 0) xx += total;
@@ -230,11 +229,7 @@ public class PlotzConnector extends APlotMeConnector {
                         sdata[i2] = block.getData();
                     }
                 }
-                else if (rz) {
-                    // other sideroad (which won't be used)
-                }
-                else {
-                    // plot.schematic
+                else if (!rz) {
                     int xx = (x - rtx) % total;
                     int zz = (z - rtz) % total;
                     if (xx < 0) xx += total;
@@ -253,11 +248,10 @@ public class PlotzConnector extends APlotMeConnector {
         }
         
         PS.log("&3 - saving schematics");
-        
         CompoundTag itag = SchematicHandler.manager.createTag(iblock, idata, idim);
         CompoundTag stag = SchematicHandler.manager.createTag(sblock, sdata, sdim);
         CompoundTag ptag = SchematicHandler.manager.createTag(pblock, pdata, pdim);
-        String base = PS.get().IMP.getDirectory() + File.separator + "schematics" + File.separator + "GEN_ROAD_SCH" + File.separator + world + File.separator;
+        String base = PS.get().IMP.getDirectory() + File.separator + "schematics" + File.separator + "GEN_ROAD_SCHEMATIC" + File.separator + world + File.separator;
         PS.log("&7 - intersection.schematic");
         SchematicHandler.manager.save(itag, base + "intersection.schematic");
         PS.log("&7 - sideroad.schematic");
