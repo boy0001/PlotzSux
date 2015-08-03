@@ -17,13 +17,12 @@ import org.bukkit.plugin.Plugin;
 import com.intellectualcrafters.configuration.file.FileConfiguration;
 import com.intellectualcrafters.jnbt.CompoundTag;
 import com.intellectualcrafters.plot.PS;
-import com.intellectualcrafters.plot.database.plotme.APlotMeConnector;
 import com.intellectualcrafters.plot.object.Plot;
 import com.intellectualcrafters.plot.object.PlotId;
 import com.intellectualcrafters.plot.util.SchematicHandler;
-import com.intellectualcrafters.plot.util.SchematicHandler.DataCollection;
 import com.intellectualcrafters.plot.util.SchematicHandler.Dimension;
 import com.intellectualcrafters.plot.util.SchematicHandler.Schematic;
+import com.plotsquared.bukkit.database.plotme.APlotMeConnector;
 
 public class PlotzConnector extends APlotMeConnector {
 
@@ -57,17 +56,17 @@ public class PlotzConnector extends APlotMeConnector {
                 PlotId actualid = new PlotId(x + 1, y + 1);
                 Plot plot = new Plot(worldname, actualid, owner);
                 for (UUID denied : plotzPlot.getDenied()) {
-                    plot.denied.add(denied);
+                    plot.getDenied().add(denied);
                 }
                 for (UUID member : plotzPlot.getAllowed()) {
-                    plot.members.add(member);
+                    plot.getMembers().add(member);
                 }
                 for (UUID trusted : plotzPlot.getAdmins()) {
-                    plot.trusted.add(trusted);
+                    plot.getTrusted().add(trusted);
                 }
                 String alias = plotzPlot.getName();
                 if (!alias.startsWith(x + "")) {
-                    plot.settings.setAlias(alias);
+                    plot.setAlias(alias);
                 }
                 List<me.kyle.plotz.obj.Plot> merged = plotzPlot.getConnectedPlots();
                 for (me.kyle.plotz.obj.Plot merge : merged) {
@@ -77,19 +76,19 @@ public class PlotzConnector extends APlotMeConnector {
                     }
                     else if (other.x == id.x - 1 && other.y == id.y) {
                         // west
-                        plot.settings.setMerged(3, true);
+                        plot.getSettings().setMerged(3, true);
                     }
                     else if (other.x == id.x + 1&& other.y == id.y) {
                         // east
-                        plot.settings.setMerged(1, true);
+                        plot.getSettings().setMerged(1, true);
                     }
                     else if (other.x == id.x && other.y == id.y - 1) {
                         // north
-                        plot.settings.setMerged(0, true);
+                        plot.getSettings().setMerged(0, true);
                     }
                     else if (other.x == id.x && other.y == id.y + 1) {
                         // south
-                        plot.settings.setMerged(2, true);
+                        plot.getSettings().setMerged(2, true);
                     }
                 }
                 plots.put(actualid, plot);
@@ -151,26 +150,31 @@ public class PlotzConnector extends APlotMeConnector {
         int rtz2 = total + rtz;
         
         Dimension dimensions = schem.getSchematicDimension();
-        DataCollection[] blocks = schem.getBlockCollection();
+        
+        short[] ids = schem.getIds();
+        byte[] datas = schem.getDatas();
+        
+        System.out.print(road + " | " + width + " | " + total);
+        System.out.print(dimensions.getX() + " | " + dimensions.getY() + " | " + dimensions.getZ());
         
         // get min block;
         int min = 0;
         int max = 0;
-        for (int y = 0; y < 256; y++) {
+        for (int y = 0; y < dimensions.getY(); y++) {
             int i1 = (y * total * total);
             for (int z = 0; z < dimensions.getZ(); z++) {
                 int i2 = i1 + (z * total);
                 for (int x = 0; x < dimensions.getX(); x++) {
                     int i = i2 + x; 
-                    DataCollection block = blocks[i];
+                    int id = ids[i];
                     if (min == 0) {
-                        if (block.getBlock() == 0) {
+                        if (id == 0) {
                             min = y - 1;
                             max = min;
                         }
                     }
                     else {
-                        if (block.getBlock() != 0) {
+                        if (id != 0) {
                             max = y;
                         }
                     }
@@ -207,9 +211,8 @@ public class PlotzConnector extends APlotMeConnector {
                     for (int y = min; y <= max; y++) {
                         int i = (y * total * total) + il;
                         int i2 = ((y-min) * road * road) + i2l;
-                        DataCollection block = blocks[i];
-                        iblock[i2] = (byte) block.getBlock();
-                        idata[i2] = block.getData();
+                        iblock[i2] = (byte) ids[i];
+                        idata[i2] = datas[i];
                     }
                 }
                 else if (rx) {
@@ -224,9 +227,8 @@ public class PlotzConnector extends APlotMeConnector {
                     for (int y = min; y <= max; y++) {
                         int i = (y * total * total) + il;
                         int i2 = ((y-min) * road * width) + i2l;
-                        DataCollection block = blocks[i];
-                        sblock[i2] = (byte) block.getBlock();
-                        sdata[i2] = block.getData();
+                        sblock[i2] = (byte) ids[i];
+                        sdata[i2] = datas[i];
                     }
                 }
                 else if (!rz) {
@@ -239,9 +241,8 @@ public class PlotzConnector extends APlotMeConnector {
                     for (int y = min; y <= max; y++) {
                         int i = (y * total * total) + il;
                         int i2 = ((y-min) * width * width) + i2l;
-                        DataCollection block = blocks[i];
-                        pblock[i2] = (byte) block.getBlock();
-                        pdata[i2] = block.getData();
+                        pblock[i2] = (byte) ids[i];
+                        pdata[i2] = datas[i];
                     }
                 }
             }

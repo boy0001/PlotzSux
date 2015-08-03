@@ -1,5 +1,5 @@
 name: PlotzSux
-version: 2.14.8
+version: 3.0.0
 authors: [Empire92]
 depend: [PlotSquared, Plotz]
 main: sux.kyle.plotz.Main
